@@ -58,6 +58,9 @@ class APCDatasetList(list):
 
     Chinese_Zhang = DatasetItem("Chinese_Zhang", ["130.Chinese_Zhang"])
 
+    TripAdvisorAttractionEn = DatasetItem("AttractionReviewEn", "504.attraction_en")
+    TripAdvisorAttractionId = DatasetItem("AttractionReviewId", "502.attraction_id")
+
     # assembled dataset
     Chinese = DatasetItem(
         "Chinese",
@@ -97,6 +100,8 @@ class APCDatasetList(list):
             "119.Yelp",
             "121.MOOC_En",
             "129.Kaggle",
+            "501.attraction_en"
+            "502.attraction_id"
         ],
     )
 
@@ -166,5 +171,7 @@ class APCDatasetList(list):
                 self.SemEval,
                 self.Restaurant,
                 self.Multilingual,
+                self.TripAdvisorAttractionEn,
+                self.TripAdvisorAttractionid,
             ]
         )

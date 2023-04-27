@@ -262,6 +262,73 @@ _apc_config_bert_baseline = {
     "cross_validate_fold": -1
     # split train and test datasets into 5 folds and repeat 3 trainer
 }
+# result 77.04 acc and 67.82 f1
+# _apc_config_indonesia = {
+#     "model": APCModelList.FAST_LSA_T_V2,
+#     "optimizer": "adamw",
+#     "learning_rate": 0.00002,
+#     "pretrained_bert": "indobenchmark/indobert-base-p2",
+#     "use_bert_spc": True,
+#     "cache_dataset": True,
+#     "warmup_step": -1,
+#     "deep_ensemble": False,
+#     "patience": 99999,
+#     "max_seq_len": 100,
+#     "lsa": True,
+#     "dropout": 0.5,
+#     "l2reg": 0.00001,
+#     "num_epoch": 5,
+#     "batch_size": 16,
+#     "initializer": "xavier_uniform_",
+#     "seed": 52,
+#     "output_dim": 3,
+#     "log_step": 5,
+#     "dynamic_truncate": True,
+#     "evaluate_begin": 0,
+#     "similarity_threshold": 1,  # disable same text check for different examples
+#     "cross_validate_fold": -1,  # split train and test datasets into 5 folds and repeat 3 trainer
+#     "window": "lr",
+#     "eta": 1,
+#     "eta_lr": 0.1,
+#     "srd_alignment": True,  # for srd_alignment
+# }
+
+_apc_config_indonesia = {
+    "model": APCModelList.BERT_SPC,
+    "optimizer": "adamw",
+    "learning_rate": 0.00002,
+    "pretrained_bert": "indobenchmark/indobert-large-p2",
+    "cache_dataset": True,
+    "warmup_step": -1,
+    "deep_ensemble": False,
+    "patience": 99999,
+    "use_bert_spc": True,
+    "max_seq_len": 80,
+    "SRD": 3,
+    "dlcf_a": 2,  # the a in dlcf_dca_bert
+    "dca_p": 1,  # the p in dlcf_dca_bert
+    "dca_layer": 3,  # the layer in dlcf_dca_bert
+    "use_syntax_based_SRD": False,
+    "sigma": 0.3,
+    # "lcf": "cdw",
+    "lsa": True,
+    "window": "lr",
+    "eta": 1,
+    "eta_lr": 0.1,
+    "dropout": 0.5,
+    "l2reg": 0.000001,
+    "num_epoch": 10,
+    "batch_size": 16,
+    "initializer": "xavier_uniform_",
+    "seed": 52,
+    "output_dim": 3,
+    "log_step": 5,
+    "dynamic_truncate": True,
+    "srd_alignment": True,  # for srd_alignment
+    "evaluate_begin": 0,
+    "similarity_threshold": 1,  # disable same text check for different examples
+    "cross_validate_fold": -1,  # split train and test datasets into 5 folds and repeat 3 trainer
+}
 
 
 class APCConfigManager(ConfigManager):
@@ -324,6 +391,8 @@ class APCConfigManager(ConfigManager):
                 _apc_config_glove.update(newitem)
             elif configType == "bert_baseline":
                 _apc_config_bert_baseline.update(newitem)
+            elif configType == "indonesia":
+                _apc_config_indonesia.update(newitem)
             else:
                 raise ValueError(
                     "Wrong value of configuration_class type supplied, please use one from following type: template, base, english, chinese, multilingual, glove, bert_baseline"
@@ -362,6 +431,10 @@ class APCConfigManager(ConfigManager):
         APCConfigManager.set_apc_config("bert_baseline", newitem)
 
     @staticmethod
+    def set_apc_config_indonesia(newitem):
+        APCConfigManager.set_apc_config("indonesia", newitem)
+
+    @staticmethod
     def get_apc_config_template():
         _apc_config_template.update(_apc_config_template)
         return APCConfigManager(copy.deepcopy(_apc_config_template))
@@ -394,4 +467,9 @@ class APCConfigManager(ConfigManager):
     @staticmethod
     def get_apc_config_bert_baseline():
         _apc_config_template.update(_apc_config_bert_baseline)
+        return APCConfigManager(copy.deepcopy(_apc_config_template))
+
+    @staticmethod
+    def get_apc_config_indonesia():
+        _apc_config_template.update(_apc_config_indonesia)
         return APCConfigManager(copy.deepcopy(_apc_config_template))
