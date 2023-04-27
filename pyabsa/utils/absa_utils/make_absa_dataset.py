@@ -13,7 +13,7 @@ import findfile
 
 from termcolor import colored
 
-from pyabsa import LabelPaddingOption
+from pyabsa.framework.flag_class.flag_template import LabelPaddingOption
 
 from pyabsa.tasks.AspectTermExtraction.prediction.aspect_extractor import (
     AspectExtractor,
@@ -76,9 +76,9 @@ def make_ABSA_dataset(dataset_name_or_path, checkpoint="english"):
                     ):
                         f_apc_out.write(
                             " ".join(
-                                result["tokens"][: position[0] - 1]
+                                result["tokens"][: position[0]]
                                 + ["$T$"]
-                                + result["tokens"][position[-1] :]
+                                + result["tokens"][position[-1] + 1 :]
                             )
                             + "\n"
                         )

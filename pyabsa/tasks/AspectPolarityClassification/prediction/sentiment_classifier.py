@@ -15,7 +15,11 @@ from sklearn import metrics
 from termcolor import colored
 from torch.utils.data import DataLoader
 
-from pyabsa import LabelPaddingOption, TaskCodeOption, DeviceTypeOption
+from pyabsa.framework.flag_class.flag_template import (
+    LabelPaddingOption,
+    TaskCodeOption,
+    DeviceTypeOption,
+)
 from pyabsa.framework.prediction_class.predictor_template import InferenceModel
 from ..models.__plm__ import BERTBaselineAPCModelList
 from ..models.__classic__ import GloVeAPCModelList
@@ -100,7 +104,7 @@ class SentimentClassifier(InferenceModel):
                     "Fail to load the model from {}! "
                     "Please make sure the version of checkpoint and PyABSA are compatible."
                     " Try to remove he checkpoint and download again"
-                    " \nException: {} ".format(e, checkpoint)
+                    " \nException: {} ".format(checkpoint, e)
                 )
 
         if isinstance(self.config.model, list):

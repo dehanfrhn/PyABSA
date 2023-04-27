@@ -23,7 +23,11 @@ from termcolor import colored
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from transformers import AutoTokenizer, AutoModel
 
-from pyabsa import LabelPaddingOption, TaskCodeOption, DeviceTypeOption
+from pyabsa.framework.flag_class.flag_template import (
+    LabelPaddingOption,
+    TaskCodeOption,
+    DeviceTypeOption,
+)
 from pyabsa.framework.prediction_class.predictor_template import InferenceModel
 from ..models import ATEPCModelList
 from ..dataset_utils.__lcf__.atepc_utils import (
@@ -649,7 +653,7 @@ class AspectExtractor(InferenceModel):
                     result["probs"] = probs
                     result["confidence"] = round(max(probs), 4)
                     result["aspect"] = all_aspects[apc_id]
-                    result["pos_ids"] = all_positions[apc_id]
+                    result["pos_ids"] = [x - 1 for x in all_positions[apc_id]]
                     result["sentiment"] = sent
                     result["example_id"] = example_id_map[apc_id]
                     res.append(result)

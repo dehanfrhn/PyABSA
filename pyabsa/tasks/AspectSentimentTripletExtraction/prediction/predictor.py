@@ -14,7 +14,7 @@ from pyabsa.utils.data_utils.dataset_manager import detect_infer_dataset
 from torch import nn
 from tqdm import tqdm
 
-from pyabsa import DeviceTypeOption
+from pyabsa.framework.flag_class.flag_template import DeviceTypeOption
 
 from pyabsa.utils.pyabsa_utils import fprint, set_device, print_args
 
@@ -100,7 +100,7 @@ class AspectSentimentTripletExtractor(InferenceModel):
                     "Fail to load the model from {}! "
                     "Please make sure the version of checkpoint and PyABSA are compatible."
                     " Try to remove he checkpoint and download again"
-                    " \nException: {} ".format(e, checkpoint)
+                    " \nException: {} ".format(checkpoint, e)
                 )
 
         self.dataset = ASTEInferenceDataset(self.config, self.tokenizer)
