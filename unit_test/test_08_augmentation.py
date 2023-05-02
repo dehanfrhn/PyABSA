@@ -123,7 +123,7 @@ def test_classification_augmentation():
         # classifier_training_num=1,
         # augment_num_per_case=10,
         # winner_num_per_case=5,
-        augment_backend="EDA",
+        augment_backend="exploratory-data-analytics.ipynb",
     )
 
 

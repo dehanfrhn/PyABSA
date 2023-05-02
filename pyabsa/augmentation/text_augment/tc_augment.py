@@ -15,7 +15,7 @@ from pyabsa.utils.pyabsa_utils import fprint
 
 
 class AugmentBackend:
-    EDA = "EDA"
+    EDA = "exploratory-data-analytics.ipynb"
     ContextualWordEmbsAug = "ContextualWordEmbsAug"
     RandomWordAug = "RandomWordAug"
     AntonymAug = "AntonymAug"
