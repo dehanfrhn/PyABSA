@@ -7,10 +7,12 @@ def main():
     dataset = DatasetItem("AttractionReviewEn", "511.attraction_en")
 
     # Load config model
-    config = APC.APCConfigManager.get_apc_config_indonesia()
+    config = APC.APCConfigManager.get_apc_config_english()
     config.model = APCModelList.FAST_LSA_T_V2
     config.cache_dataset = False
     config.batch_size = 16
+    config.max_seq_len = 120
+    config.num_epoch = 10
 
     # Train model
     Notification.send('Training started!')
