@@ -58,8 +58,8 @@ class APCDatasetList(list):
 
     Chinese_Zhang = DatasetItem("Chinese_Zhang", ["130.Chinese_Zhang"])
 
-    TripAdvisorAttractionEn = DatasetItem("AttractionReviewEn", "505.attraction_en")
-    TripAdvisorAttractionId = DatasetItem("AttractionReviewId", "502.attraction_id")
+    TripAdvisorAttractionEn = DatasetItem("AttractionReviewEn", "507.attraction_en")
+    TripAdvisorAttractionId = DatasetItem("AttractionReviewId", "508.attraction_id")
 
     # assembled dataset
     Chinese = DatasetItem(

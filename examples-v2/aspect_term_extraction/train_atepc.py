@@ -11,6 +11,7 @@
 import random
 
 from pyabsa import AspectTermExtraction as ATEPC
+from pyabsa import DatasetItem
 
 config = ATEPC.ATEPCConfigManager.get_atepc_config_chinese()
 config.model = ATEPC.ATEPCModelList.FAST_LCF_ATEPC
@@ -29,12 +30,12 @@ config.cache_dataset = True
 config.cross_validate_fold = -1
 
 # chinese_sets = ATEPC.ATEPCDatasetList.Chinese_Zhang
-chinese_sets = ATEPC.ATEPCDatasetList.Multilingual
-
+# chinese_sets = ATEPC.ATEPCDatasetList.Multilingual
+dataset = DatasetItem('attraction', '512.AttractionEn')
 aspect_extractor = ATEPC.ATEPCTrainer(
     config=config,
     from_checkpoint="",
-    dataset=chinese_sets,
+    dataset=dataset,
     checkpoint_save_mode=1,
     auto_device=True,
     load_aug=False,

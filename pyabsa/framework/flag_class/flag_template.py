@@ -101,4 +101,5 @@ class DeviceTypeOption:
     ALL_CUDA = "allcuda"
 
 
+
 PyABSAMaterialHostAddress = "https://huggingface.co/spaces/yangheng/PyABSA/"

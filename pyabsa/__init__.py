@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # file: __init__.py
 # time: 2021/4/22 0022
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)

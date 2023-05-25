@@ -86,6 +86,7 @@ class ATEPCDatasetList(list):
     Russian_SemEval2016Task5 = DatasetItem("Russian_SemEval2016Task5", ["126.Russian"])
     French_SemEval2016Task5 = DatasetItem("French_SemEval2016Task5", ["125.French"])
     English_SemEval2016Task5 = DatasetItem("English_SemEval2016Task5", ["124.English"])
+    English_AttractionReviews = DatasetItem("English_AttractionReviews", ["512.valid.attraction_en"])
 
     English = DatasetItem(
         "English",
