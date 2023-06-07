@@ -132,3 +132,11 @@ Running ATEPC :
 - Dataset Code : 512
 - log : fast_lcf_atepc_20230522 040039
 - checkpoint : fast_lcf_atepc_attraction_cdm_apcacc_90.41_apcf1_85.05_atef1_87.16
+
+=== 26 Mei 2023 ===
+Running APC:
+- Pre-Trained Model : yangheng/deberta
+- Data Preprocessing : True
+- Dataset Code : 511
+- log : fast_lsa_t_v2_20230526 002505
+- checkpoint : fast_lsa_t_v2_attraction_cdm_apcacc_90.51_apcf1_85.52

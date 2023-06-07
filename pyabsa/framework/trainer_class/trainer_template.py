@@ -112,6 +112,7 @@ def init_config(config):
     config.logger.info("Transformers version: {}".format(config.TransformersVersion))
     config.logger.info("Torch version: {}".format(config.TorchVersion))
     config.logger.info("Device: {}".format(config.device_name))
+    config.logger.info("Scenario Case: {}".format(config.scenario_case))
 
     # return the updated configuration object
     return config

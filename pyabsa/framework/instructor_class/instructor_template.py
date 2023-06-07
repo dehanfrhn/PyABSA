@@ -91,6 +91,7 @@ class BaseTrainingInstructor:
         self.warmup_scheduler = None
         self.tokenizer = None
         self.embedding_matrix = None
+        self.debugging_farrel = "HAI"
 
     def _reset_params(self):
         """

@@ -23,6 +23,7 @@ from pyabsa.framework.instructor_class.instructor_template import BaseTrainingIn
 from ..instructor.ensembler import APCEnsembler
 from pyabsa.utils.file_utils.file_utils import save_model
 from pyabsa.utils.pyabsa_utils import init_optimizer, fprint
+from pyabsa.utils.logger.logger import get_logger
 
 
 class APCTrainingInstructor(BaseTrainingInstructor):
@@ -44,6 +45,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
         self._init_misc()
 
     def _train_and_evaluate(self, criterion):
+        global postfix
         global_step = 0
         max_fold_acc = 0
         max_fold_f1 = 0
@@ -204,7 +206,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                     self.config, self.model, self.tokenizer, save_path
                                 )
 
-                        postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) Dev F1:{:>.2f}(max:{:>.2f})".format(
+                        postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) | Dev F1:{:>.2f}(max:{:>.2f})".format(
                             test_acc * 100,
                             max_fold_acc * 100,
                             f1 * 100,
@@ -221,7 +223,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 else:
                     if self.config.get("loss_display", "smooth") == "smooth":
                         description = "Epoch:{:>3d} | Smooth Loss: {:>.4f}".format(
-                            epoch, round(np.nanmean(losses), 4)
+                            epoch+1, round(np.nanmean(losses), 4)
                         )
                     else:
                         description = "Epoch:{:>3d} | Batch Loss: {:>.4f}".format(
@@ -231,7 +233,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 iterator.refresh()
             if patience == 0:
                 break
-
+            self.config.logger.info("Epoch:{:>3d} | Average Training Loss: {:>.4f} | {}".format(epoch+1, round(np.nanmean(losses), 4), postfix))
         if not self.valid_dataloaders:
             self.config.MV.log_metric(
                 self.config.model_name
@@ -289,6 +291,9 @@ class APCTrainingInstructor(BaseTrainingInstructor):
         )
         self.config.loss = losses[-1]
         # self.config.loss = np.average(losses)
+
+        # final loss metrics
+        self.logger.info("Last Loss Metrics of this checkpoint: {}".format(self.config.loss))
 
         if self.valid_dataloader or self.config.save_mode:
             del self.train_dataloaders
@@ -486,7 +491,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                             )
                     else:
                         if self.config.get("loss_display", "smooth") == "smooth":
-                            description = "Epoch:{:>3d} | Smooth Loss: {:>.4f}".format(
+                            description = "Epoch:{:>3d} | Smooth Lossa: {:>.4f}".format(
                                 epoch, round(np.nanmean(losses), 4)
                             )
                         else:
@@ -553,6 +558,9 @@ class APCTrainingInstructor(BaseTrainingInstructor):
         )
         self.config.loss = losses[-1]
         # self.config.loss = np.average(losses)
+        # self.config.loss = losses
+        # config.logger.info("Average loss: {}".format(self.config.loss))
+        fprint("Average loss: {}".format(self.config.loss))
 
         if os.path.exists("./init_state_dict.bin"):
             os.remove("./init_state_dict.bin")

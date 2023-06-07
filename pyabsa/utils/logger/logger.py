@@ -12,7 +12,7 @@ import time
 today = time.strftime("%Y%m%d %H%M%S", time.localtime(time.time()))
 
 
-def get_logger(log_path, log_name="", log_type="training_log"):
+def get_logger(log_path: object, log_name: object = "", log_type: object = "training_log") -> object:
     """
     Create a logger object with file handler and console handler.
 
