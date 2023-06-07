@@ -1,9 +1,0 @@
-﻿name: pyabsa
-channels:
-  - defaults
-  - nvidia
-  - pytorch
-dependencies:
-  - python=3.9
-  - pytorch-cuda
-  - pytorch
