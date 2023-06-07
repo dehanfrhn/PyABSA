@@ -295,7 +295,7 @@ def baseline_scenario(pretrained):
 
     # Load config model
     config = APC.APCConfigManager.get_apc_config_english()
-    config.num_epoch = 2
+    config.num_epoch = 1
     config.learning_rate = 2e-5
     config.model = APCModelList.FAST_LSA_T_V2
     config.pretrained_bert = pretrained
@@ -325,6 +325,7 @@ def baseline_scenario(pretrained):
         )
 
         Notification.send('Training completed!')
+        print('result', trainer)
     except Exception as e:
         Notification.send(f'Training failed! {e}')
         raise e
@@ -343,17 +344,17 @@ if __name__ == '__main__':
     from pyabsa import DatasetItem
 
     # pemilihan pretrained model
-    Notification.send('indobenchmark/indobert-base-p1 started!')
-    baseline_scenario('indobenchmark/indobert-base-p1')
+    # Notification.send('indobenchmark/indobert-base-p1 started!')
+    # baseline_scenario('indobenchmark/indobert-base-p1')
+    #
+    # Notification.send('indobenchmark/indobert-base-p2 started!')
+    # baseline_scenario('indobenchmark/indobert-base-p2')
+    #
+    # Notification.send('indobenchmark/indobert-lite-large-p2 started!')
+    # baseline_scenario('indobenchmark/indobert-lite-large-p2')  # dipilih karena memiliki akurasi yang lebih baik untuk dataset SmSA (review)
 
-    Notification.send('indobenchmark/indobert-base-p2 started!')
-    baseline_scenario('indobenchmark/indobert-base-p2')
-
-    Notification.send('indobenchmark/indobert-lite-large-p2 started!')
-    baseline_scenario('indobenchmark/indobert-lite-large-p2')  # dipilih karena memiliki akurasi yang lebih baik untuk dataset SmSA (review)
-
+    baseline_scenario('cahya/bert-base-indonesian-1.5G')
 
     # baseline_scenario('indobenchmark/indobert-large-p2')  # metrics paling tinggi dari indobenchmark
     # baseline_scenario('w11wo/indonesian-roberta-base-sentiment-classifier')
     # baseline_scenario('rizalmilyardi/IndobertTypeNews')
-    # baseline_scenario('cahya/bert-base-indonesian-1.5G')
