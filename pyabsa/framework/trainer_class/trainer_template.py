@@ -34,7 +34,7 @@ from ...utils.data_utils.dataset_manager import detect_dataset
 
 import warnings
 
-warnings.filterwarnings("once")
+warnings.filterwarnings("ignore")
 
 
 def init_config(config):

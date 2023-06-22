@@ -2,6 +2,7 @@
 # file: apc_instructor.py
 # time: 2021/4/22 0022
 # author: YANG, HENG <hy345@exeter.ac.uk> (杨恒)
+# modified: Farrel Arrizal <farrel.19052@student.its.ac.id>
 # github: https://github.com/yangheng95
 # Copyright (C) 2021. All Rights Reserved.
 
@@ -24,6 +25,7 @@ from ..instructor.ensembler import APCEnsembler
 from pyabsa.utils.file_utils.file_utils import save_model
 from pyabsa.utils.pyabsa_utils import init_optimizer, fprint
 from pyabsa.utils.logger.logger import get_logger
+from utils import Notification
 
 
 class APCTrainingInstructor(BaseTrainingInstructor):
@@ -128,9 +130,9 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 targets = sample_batched["polarity"].to(self.config.device)
 
                 if (
-                    isinstance(outputs, dict)
-                    and "loss" in outputs
-                    and outputs["loss"] != 0
+                        isinstance(outputs, dict)
+                        and "loss" in outputs
+                        and outputs["loss"] != 0
                 ):
                     loss = outputs["loss"]
                 else:
@@ -155,13 +157,21 @@ class APCTrainingInstructor(BaseTrainingInstructor):
 
                 # evaluate if test set is available
                 if global_step % self.config.log_step == 0:
-                    if self.test_dataloader and epoch >= self.config.evaluate_begin:
-                        if len(self.valid_dataloaders) > 1:
+                    if self.valid_dataloaders and epoch >= self.config.evaluate_begin:
+                        if len(self.valid_dataloaders) > 0:
+                            # self.logger.info(f"[DEBUG] halo")
                             test_acc, f1 = self._evaluate_acc_f1(
                                 self.valid_dataloaders[0]
                             )
-                        else:
-                            test_acc, f1 = self._evaluate_acc_f1(self.test_dataloader)
+                        #     self.logger.info(f"[DEBUG] test_acc_validation {test_acc}, f1_validation {f1}")
+                        # else:
+                        #     if epoch == self.config.num_epoch - 1 & global_step > 5 * 70:
+                        #         # self.logger.info(f"[DEBUG] EPOCH {epoch}, GLOBAL_STEP {self.config.num_epoch}")
+                        #         test_acc, f1 = self._evaluate_acc_f1(self.test_dataloader, show_metrics=True)
+                        #     else:
+                        #         self.logger.info(f"[DEBUG] GLOBAL_STEP {global_step}")
+                        #         test_acc, f1 = self._evaluate_acc_f1(self.test_dataloader)
+                        # test_acc, f1 = self._evaluate_acc_f1(self.valid_dataloaders)
                         self.config.metrics_of_this_checkpoint["acc"] = test_acc
                         self.config.metrics_of_this_checkpoint["f1"] = f1
 
@@ -193,8 +203,8 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                 )
 
                                 if (
-                                    test_acc
-                                    > self.config.max_test_metrics["max_apc_test_acc"]
+                                        test_acc
+                                        > self.config.max_test_metrics["max_apc_test_acc"]
                                 ):
                                     self.config.max_test_metrics[
                                         "max_apc_test_acc"
@@ -223,7 +233,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 else:
                     if self.config.get("loss_display", "smooth") == "smooth":
                         description = "Epoch:{:>3d} | Smooth Loss: {:>.4f}".format(
-                            epoch+1, round(np.nanmean(losses), 4)
+                            epoch + 1, round(np.nanmean(losses), 4)
                         )
                     else:
                         description = "Epoch:{:>3d} | Batch Loss: {:>.4f}".format(
@@ -233,15 +243,19 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 iterator.refresh()
             if patience == 0:
                 break
-            self.config.logger.info("Epoch:{:>3d} | Average Training Loss: {:>.4f} | {}".format(epoch+1, round(np.nanmean(losses), 4), postfix))
-        if not self.valid_dataloaders:
+            self.config.logger.info(
+                "Epoch:{:>3d} | Average Training Loss: {:>.4f} | {}".format(epoch + 1, round(np.nanmean(losses), 4),
+                                                                            postfix))
+
+        # if test dataloader is not exists, we evaluate on the best model on validation set
+        if not self.test_dataloader:
             self.config.MV.log_metric(
                 self.config.model_name
                 + "-"
                 + self.config.dataset_name
                 + "-"
                 + self.config.pretrained_bert,
-                "Max-Test-Acc w/o Valid Set",
+                "Max-Valid-Acc w/o Test Set",
                 max_fold_acc * 100,
             )
             self.config.MV.log_metric(
@@ -250,16 +264,20 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 + self.config.dataset_name
                 + "-"
                 + self.config.pretrained_bert,
-                "Max-Test-F1 w/o Valid Set",
+                "Max-Valid-F1 w/o Test Set",
                 max_fold_f1 * 100,
             )
 
-        if len(self.valid_dataloaders) > 1:
+        if len(self.test_dataloader) > 0:
+            messages = "Loading best model: {} and evaluating on test set ".format(save_path)
+            Notification.send(f'Best Model for {self.config.pretrained_bert}: {save_path}')
             fprint(
-                "Loading best model: {} and evaluating on test set ".format(save_path)
+                messages
             )
+            self.logger.info(messages)
             self._reload_model_state_dict(save_path)
             max_fold_acc, max_fold_f1 = self._evaluate_acc_f1(self.test_dataloader)
+            self.logger.info('Max-Test-Acc: {:>.2f} | Max-Test-F1: {:>.2f}'.format(max_fold_acc * 100, max_fold_f1 * 100))
 
             self.config.MV.log_metric(
                 self.config.model_name
@@ -323,9 +341,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
         self.config.metrics_of_this_checkpoint = {"acc": 0, "f1": 0}
         self.config.max_test_metrics = {"max_apc_test_acc": 0, "max_apc_test_f1": 0}
 
-        for f, (train_dataloader, valid_dataloader) in enumerate(
-            zip(self.train_dataloaders, self.valid_dataloaders)
-        ):
+        for f, (train_dataloader, valid_dataloader) in enumerate(zip(self.train_dataloaders, self.valid_dataloaders)):
             patience = self.config.patience + self.config.evaluate_begin
             if self.config.log_step < 0:
                 self.config.log_step = (
@@ -384,9 +400,9 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                     targets = sample_batched["polarity"].to(self.config.device)
 
                     if (
-                        isinstance(outputs, dict)
-                        and "loss" in outputs
-                        and outputs["loss"] != 0
+                            isinstance(outputs, dict)
+                            and "loss" in outputs
+                            and outputs["loss"] != 0
                     ):
                         loss = outputs["loss"]
                     else:
@@ -428,7 +444,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
 
                                 if self.config.model_path_to_save:
                                     if not os.path.exists(
-                                        self.config.model_path_to_save
+                                            self.config.model_path_to_save
                                     ):
                                         os.makedirs(self.config.model_path_to_save)
                                     if save_path:
@@ -447,19 +463,19 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                     )
 
                                     if (
-                                        test_acc
-                                        > self.config.max_test_metrics[
-                                            "max_apc_test_acc"
-                                        ]
+                                            test_acc
+                                            > self.config.max_test_metrics[
+                                        "max_apc_test_acc"
+                                    ]
                                     ):
                                         self.config.max_test_metrics[
                                             "max_apc_test_acc"
                                         ] = test_acc
                                     if (
-                                        f1
-                                        > self.config.max_test_metrics[
-                                            "max_apc_test_f1"
-                                        ]
+                                            f1
+                                            > self.config.max_test_metrics[
+                                        "max_apc_test_f1"
+                                    ]
                                     ):
                                         self.config.max_test_metrics[
                                             "max_apc_test_f1"
@@ -621,23 +637,27 @@ class APCTrainingInstructor(BaseTrainingInstructor):
             average=self.config.get("f1_average", "macro"),
         )
 
-        if self.config.args.get("show_metric", False):
-            fprint(
-                "\n---------------------------- APC Classification Report ----------------------------\n"
+        # show metrics only on test
+        if test_dataloader == self.test_dataloader:
+            first_bar = "\n--------------------- APC Classification Report On Test Set ---------------------\n"
+            self.logger.info(first_bar)
+            fprint(first_bar)
+            output_metrics = metrics.classification_report(
+                t_targets_all.cpu(),
+                torch.argmax(t_outputs_all.cpu(), -1),
+                target_names=[
+                    self.config.index_to_label[x]
+                    for x in sorted(self.config.index_to_label.keys())
+                ],
             )
+            fprint(output_metrics)
+            self.logger.info(output_metrics)
+            last_bar = "--------------------- APC Classification Report On Test Set ---------------------\n"
+            self.logger.info(last_bar)
             fprint(
-                metrics.classification_report(
-                    t_targets_all.cpu(),
-                    torch.argmax(t_outputs_all.cpu(), -1),
-                    target_names=[
-                        self.config.index_to_label[x]
-                        for x in sorted(self.config.index_to_label.keys())
-                    ],
-                )
+                last_bar
             )
-            fprint(
-                "\n---------------------------- APC Classification Report ----------------------------\n"
-            )
+            Notification.send(f'Pre Trained: {self.config.pretrained_bert} has finished training with test acc: {test_acc} and f1: {f1}')
 
         return test_acc, f1
 

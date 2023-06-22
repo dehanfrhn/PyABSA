@@ -120,7 +120,7 @@ _apc_config_english = {
     "eta": 1,
     "eta_lr": 0.01,
     "dropout": 0.5,
-    "l2reg": 0.00001,
+    "l2reg": 0.00001, # 1e-5
     "num_epoch": 10,
     "batch_size": 16,
     "initializer": "xavier_uniform_",

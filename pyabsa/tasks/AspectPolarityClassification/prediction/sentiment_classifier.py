@@ -32,6 +32,7 @@ from ..dataset_utils.__plm__.data_utils_for_inference import BERTABSAInferenceDa
 from ..instructor.ensembler import APCEnsembler
 from pyabsa.utils.data_utils.dataset_manager import detect_infer_dataset
 from pyabsa.utils.pyabsa_utils import set_device, print_args, fprint, rprint
+from pyabsa.utils.logger import logger
 
 
 class SentimentClassifier(InferenceModel):
@@ -73,10 +74,17 @@ class SentimentClassifier(InferenceModel):
                 fprint("model: {}".format(model_path))
                 fprint("tokenizer: {}".format(tokenizer_path))
 
+
+
                 with open(config_path, mode="rb") as f:
                     self.config = pickle.load(f)
-                    self.config.auto_device = kwargs.get("auto_device", True)
+                    self.config.auto_device = "cuda"
                     set_device(self.config, self.config.auto_device)
+
+                self.config.logger.info("config: {}".format(config_path))
+                self.config.logger.info("state_dict: {}".format(state_dict_path))
+                self.config.logger.info("model: {}".format(model_path))
+                self.config.logger.info("tokenizer: {}".format(tokenizer_path))
 
                 if state_dict_path or model_path:
                     if state_dict_path:
@@ -452,6 +460,10 @@ class SentimentClassifier(InferenceModel):
                 )
             )
 
+            self.config.logger.info("Total samples:{}".format(n_total))
+            self.config.logger.info("Labeled samples:{}".format(n_labeled))
+            self.config.logger.info("Prediction Accuracy:{}%".format(100 * n_correct / n_labeled if n_labeled else "N.A."))
+
             try:
                 report = metrics.classification_report(
                     t_targets_all,
@@ -462,26 +474,32 @@ class SentimentClassifier(InferenceModel):
                         for x in sorted(self.config.index_to_label.keys())[1:]
                     ],
                 )
+                header_cr = "\n---------------------------- Start Classification Report ----------------------------\n"
                 fprint(
-                    "\n---------------------------- Classification Report ----------------------------\n"
+                    header_cr
                 )
                 rprint(report)
+                footer_cr = "\n---------------------------- End Classification Report ----------------------------\n"
                 fprint(
-                    "\n---------------------------- Classification Report ----------------------------\n"
+                    footer_cr
                 )
+                self.config.logger.info(header_cr + report + footer_cr)
 
                 report = metrics.confusion_matrix(
                     y_true=t_targets_all,
                     y_pred=np.argmax(t_outputs_all, -1),
                     labels=[x for x in sorted(self.config.index_to_label.keys())[1:]],
                 )
+                header_cm = "\n---------------------------- Start Confusion Matrix ----------------------------\n"
                 fprint(
-                    "\n---------------------------- Confusion Matrix ----------------------------\n"
+
                 )
                 rprint(report)
+                footer_cm = "\n---------------------------- End Confusion Matrix ----------------------------\n"
                 fprint(
-                    "\n---------------------------- Confusion Matrix ----------------------------\n"
+                    footer_cm
                 )
+                self.config.logger.info(header_cm + report + footer_cm)
 
             except Exception as e:
                 fprint(

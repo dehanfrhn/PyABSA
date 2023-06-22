@@ -1,0 +1,47 @@
+[2023-06-07 19:39:46] (2.3.1) PyABSA(2.3.1): If your code crashes on Colab, please use the GPU runtime. Then run "pip install pyabsa[dev] -U" and restart the kernel.
+Or if it does not work, you can use v1.16.27
+
+[New Feature] Aspect Sentiment Triplet Extraction since v2.1.0 (https://github.com/yangheng95/PyABSA/tree/v2/examples-v2/aspect_sentiment_triplet_extration)
+[New Feature] Aspect CategoryOpinion Sentiment Quadruple Extraction since v2.2.0 (https://github.com/yangheng95/PyABSA/tree/v2/examples-v2/aspect_opinion_sentiment_category_extraction)
+
+[2023-06-07 19:39:57] (2.3.1) Load sentiment classifier from /drive0-storage/PyABSA/checkpoints/fast_lsa_t_v2_AttractionReviewId_acc_80.81_f1_71.83
+[2023-06-07 19:39:57] (2.3.1) config: checkpoints/fast_lsa_t_v2_AttractionReviewId_acc_80.81_f1_71.83/fast_lsa_t_v2.config
+[2023-06-07 19:39:57] (2.3.1) state_dict: checkpoints/fast_lsa_t_v2_AttractionReviewId_acc_80.81_f1_71.83/fast_lsa_t_v2.state_dict
+[2023-06-07 19:39:57] (2.3.1) model: None
+[2023-06-07 19:39:57] (2.3.1) tokenizer: checkpoints/fast_lsa_t_v2_AttractionReviewId_acc_80.81_f1_71.83/fast_lsa_t_v2.tokenizer
+[2023-06-07 19:39:57] (2.3.1) Set Model Device: cuda
+[2023-06-07 19:39:57] (2.3.1) Device Name: N.A.
+[2023-06-07 19:40:01] (2.3.1) Try to load 521-test.attraction_id dataset from local disk
+FindFile Warning --> multiple targets ['integrated_datasets/apc_datasets/521-test.attraction_id', 'integrated_datasets/apc_datasets/521-test.attraction_id/.ipynb_checkpoints'] found, only return the shortest path: <integrated_datasets/apc_datasets/521-test.attraction_id>
+[2023-06-07 19:40:09] (2.3.1) inference result saved in: /drive0-storage/PyABSA/Aspect-based Sentiment Classification.FAST_LSA_T_V2.result.json
+[2023-06-07 19:40:09] (2.3.1) Total samples:1172
+[2023-06-07 19:40:09] (2.3.1) Labeled samples:1172
+[2023-06-07 19:40:09] (2.3.1) Prediction Accuracy:78.58361774744027%
+[2023-06-07 19:40:09] (2.3.1) 
+---------------------------- Start Classification Report ----------------------------
+
+
+[2023-06-07 19:40:09] (2.3.1)
+               precision    recall  f1-score   support
+
+    Negative     0.7273    0.6400    0.6809       125
+     Neutral     0.6316    0.5673    0.5977       275
+    Positive     0.8405    0.8873    0.8633       772
+
+    accuracy                         0.7858      1172
+   macro avg     0.7331    0.6982    0.7139      1172
+weighted avg     0.7794    0.7858    0.7815      1172
+
+[2023-06-07 19:40:09] (2.3.1) 
+---------------------------- End Classification Report ----------------------------
+
+[2023-06-07 19:40:09] (2.3.1)
+
+[2023-06-07 19:40:09] (2.3.1)
+ [[ 80  17  28]
+ [ 17 156 102]
+ [ 13  74 685]]
+[2023-06-07 19:40:09] (2.3.1) 
+---------------------------- End Confusion Matrix ----------------------------
+
+[2023-06-07 19:40:09] (2.3.1) Classification report is not available because your examples does not contain all classesor have not reference labels. Exception: ufunc 'add' did not contain a loop with signature matching types (dtype('<U82'), dtype('int64')) -> None
