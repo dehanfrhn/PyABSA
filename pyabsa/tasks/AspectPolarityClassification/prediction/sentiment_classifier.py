@@ -382,7 +382,7 @@ class SentimentClassifier(InferenceModel):
                             "aspect": aspect,
                             "sentiment": sent,
                             "confidence": confidence,
-                            "probs": i_probs.cpu().numpy(),
+                            "probs": str(i_probs.cpu().numpy()),
                             "ref_sentiment": real_sent,
                             "ref_check": correct[sent == real_sent]
                             if real_sent != str(LabelPaddingOption.LABEL_PADDING)
@@ -445,8 +445,9 @@ class SentimentClassifier(InferenceModel):
                         )
                     fprint("Example {}: {}".format(ex_id, text_printing))
             if save_path:
-                with open(save_path, "w", encoding="utf8") as fout:
-                    json.dump(str(results), fout, ensure_ascii=False)
+                with open(save_path, "w", encoding="utf-8") as fout:
+                    # json.dump(str(results), fout, ensure_ascii=False)
+                    json.dump(results, fout, ensure_ascii=False)
                     fprint("inference result saved in: {}".format(save_path))
         except Exception as e:
             fprint("Can not save result: {}, Exception: {}".format(text_raw, e))
