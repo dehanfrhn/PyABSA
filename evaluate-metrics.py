@@ -36,5 +36,5 @@ if __name__ ==  '__main__':
     from pyabsa import available_checkpoints
     from pyabsa import DatasetItem
 
-    _evaluate_inggris('EN_B_04_fast_lsa_t_v2_AttractionReviewEn_acc_91.42_f1_85.41')
+    # _evaluate_inggris('EN_B_04_fast_lsa_t_v2_AttractionReviewEn_acc_91.42_f1_85.41')
     # _evaluate_indonesia('ID_A_02_fast_lsa_t_v2_AttractionReviewId_acc_80.8_f1_76.25')
