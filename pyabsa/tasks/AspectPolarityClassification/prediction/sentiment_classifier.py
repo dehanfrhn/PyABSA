@@ -229,7 +229,7 @@ class SentimentClassifier(InferenceModel):
     def predict(
         self,
         text: Union[str, list] = None,
-        print_result=True,
+        print_result=False,
         ignore_error=True,
         **kwargs
     ):
