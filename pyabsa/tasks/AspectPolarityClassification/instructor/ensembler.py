@@ -9,6 +9,7 @@ import os
 import pickle
 import re
 from hashlib import sha256
+from sys import exit
 
 from findfile import find_cwd_dir
 from termcolor import colored

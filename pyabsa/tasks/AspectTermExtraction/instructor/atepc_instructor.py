@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F
 import tqdm
 from seqeval.metrics import classification_report
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_score, recall_score
 from torch import cuda
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from transformers import AutoTokenizer, AutoModel
@@ -273,15 +273,22 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
         sum_loss = 0
         sum_apc_test_acc = 0
         sum_apc_test_f1 = 0
+        sum_apc_test_precision = 0
+        sum_apc_test_recall = 0
         sum_ate_test_f1 = 0
+        
         self.config.max_test_metrics = {
             "max_apc_test_acc": 0,
             "max_apc_test_f1": 0,
+            "max_apc_test_precision": 0,
+            "max_apc_test_recall": 0,
             "max_ate_test_f1": 0,
         }
         self.config.metrics_of_this_checkpoint = {
             "apc_acc": 0,
             "apc_f1": 0,
+            "apc_precision": 0,
+            "apc_recall": 0,
             "ate_f1": 0,
         }
         global_step = 0
@@ -384,12 +391,20 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                             )
                         sum_apc_test_acc += apc_result["apc_test_acc"]
                         sum_apc_test_f1 += apc_result["apc_test_f1"]
+                        sum_apc_test_precision += apc_result["apc_test_precision"]
+                        sum_apc_test_recall += apc_result["apc_test_recall"]
                         sum_ate_test_f1 += ate_result
                         self.config.metrics_of_this_checkpoint["apc_acc"] = apc_result[
                             "apc_test_acc"
                         ]
                         self.config.metrics_of_this_checkpoint["apc_f1"] = apc_result[
                             "apc_test_f1"
+                        ]
+                        self.config.metrics_of_this_checkpoint["apc_precision"] = apc_result[
+                            "apc_test_precision"
+                        ]
+                        self.config.metrics_of_this_checkpoint["apc_recall"] = apc_result[
+                            "apc_test_recall"
                         ]
                         self.config.metrics_of_this_checkpoint["ate_f1"] = ate_result
 
@@ -398,6 +413,10 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                             > self.config.max_test_metrics["max_apc_test_acc"]
                             or apc_result["apc_test_f1"]
                             > self.config.max_test_metrics["max_apc_test_f1"]
+                            or apc_result["apc_test_precision"]
+                            > self.config.max_test_metrics["max_apc_test_precision"]
+                            or apc_result["apc_test_recall"]
+                            > self.config.max_test_metrics["max_apc_test_recall"]
                             or ate_result
                             > self.config.max_test_metrics["max_ate_test_f1"]
                         ):
@@ -417,6 +436,20 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                                     "max_apc_test_f1"
                                 ] = apc_result["apc_test_f1"]
                             if (
+                                apc_result["apc_test_precision"]
+                                > self.config.max_test_metrics["max_apc_test_precision"]
+                            ):
+                                self.config.max_test_metrics[
+                                    "max_apc_test_precision"
+                                ] = apc_result["apc_test_precision"]
+                            if (
+                                apc_result["apc_test_recall"]
+                                > self.config.max_test_metrics["max_apc_test_recall"]
+                            ):
+                                self.config.max_test_metrics[
+                                    "max_apc_test_recall"
+                                ] = apc_result["apc_test_recall"]
+                            if (
                                 ate_result
                                 > self.config.max_test_metrics["max_ate_test_f1"]
                             ):
@@ -432,13 +465,15 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                                 #     except:
                                 #         self.logger.info('Can not remove sub-self.configimal trained model:', save_path)
 
-                                save_path = "{0}/{1}_{2}_{3}_apcacc_{4}_apcf1_{5}_atef1_{6}/".format(
+                                save_path = "{0}/{1}_{2}_{3}_apcacc_{4}_apcf1_{5}_apcprecision_{6}_apcrecall_{7}_atef1_{8}/".format(
                                     self.config.model_path_to_save,
                                     self.config.model_name,
                                     self.config.dataset_name,
                                     self.config.lcf,
                                     round(apc_result["apc_test_acc"], 2),
                                     round(apc_result["apc_test_f1"], 2),
+                                    round(apc_result["apc_test_precision"], 2),
+                                    round(apc_result["apc_test_recall"], 2),
                                     round(ate_result, 2),
                                 )
 
@@ -448,6 +483,8 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
 
                         current_apc_test_acc = apc_result["apc_test_acc"]
                         current_apc_test_f1 = apc_result["apc_test_f1"]
+                        current_apc_test_precision = apc_result["apc_test_precision"]
+                        current_apc_test_recall = apc_result["apc_test_recall"]
                         current_ate_test_f1 = round(ate_result, 2)
 
                         description = "Epoch:{:>3d}| ".format(epoch)
@@ -455,11 +492,15 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                         description += "loss_apc:{:>.4f} | loss_ate:{:>.4f} |".format(
                             loss_apc.item(), loss_ate.item()
                         )
-                        postfix = " APC_ACC: {:>.2f}(max:{:>.2f}) | APC_F1: {:>.2f}(max:{:>.2f}) | ".format(
+                        postfix = " APC_ACC: {:>.2f}(max:{:>.2f}) | APC_F1: {:>.2f}(max:{:>.2f}) | APC_PRECISION: {:>.2f}(max:{:>.2f}) | APC_RECALL: {:>.2f}(max:{:>.2f}) |  ".format(
                             current_apc_test_acc,
                             self.config.max_test_metrics["max_apc_test_acc"],
                             current_apc_test_f1,
                             self.config.max_test_metrics["max_apc_test_f1"],
+                            current_apc_test_precision,
+                            self.config.max_test_metrics["max_apc_test_precision"],
+                            current_apc_test_recall,
+                            self.config.max_test_metrics["max_apc_test_recall"],
                         )
                         postfix += "ATE_F1: {:>.2f}(max:{:>.2f})".format(
                             current_ate_test_f1,
@@ -516,6 +557,24 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                 + self.config.dataset_name
                 + "-"
                 + self.config.pretrained_bert,
+                "Test-APC-Precision",
+                apc_result["apc_test_precision"],
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Test-APC-Recall",
+                apc_result["apc_test_recall"],
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
                 "Test-ATE-F1",
                 ate_result,
             )
@@ -538,6 +597,24 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                 + self.config.pretrained_bert,
                 "Max-APC-Test-F1 w/o Valid Set",
                 self.config.max_test_metrics["max_apc_test_f1"],
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-APC-Test-Precision w/o Valid Set",
+                self.config.max_test_metrics["max_apc_test_precision"],
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-APC-Test-Recall w/o Valid Set",
+                self.config.max_test_metrics["max_apc_test_recall"],
             )
             self.config.MV.log_metric(
                 self.config.model_name
@@ -583,6 +660,8 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                 self.tokenizer,
                 sum_apc_test_acc,
                 sum_apc_test_f1,
+                sum_apc_test_precision,
+                sum_apc_test_recall,
                 sum_ate_test_f1,
             )
 
@@ -592,7 +671,7 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
     def _evaluate_acc_f1(self, test_dataloader, eval_ATE=True, eval_APC=True):
         if test_dataloader is None:
             test_dataloader = self.test_dataloader
-        apc_result = {"apc_test_acc": 0, "apc_test_f1": 0}
+        apc_result = {"apc_test_acc": 0, "apc_test_f1": 0, "apc_test_precision": 0, "apc_test_recall":0}
         ate_result = 0
         y_true = []
         y_pred = []
@@ -687,10 +766,26 @@ class ATEPCTrainingInstructor(BaseTrainingInstructor):
                 labels=list(range(self.config.output_dim)),
                 average=self.config.get("f1_average", "macro"),
             )
+            
+            test_precision = precision_score(
+                torch.argmax(test_apc_logits_all, -1).cpu(),
+                test_polarities_all.cpu(),
+                labels=list(range(self.config.output_dim)),
+                average=self.config.get("precision_average", "macro"),
+            )
+            
+            test_recall = recall_score(
+                torch.argmax(test_apc_logits_all, -1).cpu(),
+                test_polarities_all.cpu(),
+                labels=list(range(self.config.output_dim)),
+                average=self.config.get("recall_average", "macro"),
+            )
 
             test_acc = round(test_acc * 100, 2)
             test_f1 = round(test_f1 * 100, 2)
-            apc_result = {"apc_test_acc": test_acc, "apc_test_f1": test_f1}
+            test_precision = round(test_precision * 100, 2)
+            test_recall = round(test_recall * 100, 2)
+            apc_result = {"apc_test_acc": test_acc, "apc_test_f1": test_f1, "apc_test_precision": test_precision, "apc_test_recall": test_recall}
             if self.config.args.get("show_metric", False):
                 try:
                     apc_report = metrics.classification_report(
