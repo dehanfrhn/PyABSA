@@ -11,7 +11,7 @@ import time
 
 import numpy
 import numpy as np
-import pandas
+import pandas 
 import torch
 import torch.nn as nn
 from sklearn import metrics
@@ -49,14 +49,16 @@ class APCTrainingInstructor(BaseTrainingInstructor):
         global_step = 0
         max_fold_acc = 0
         max_fold_f1 = 0
+        max_fold_precision = 0
+        max_fold_recall = 0
         save_path = "{0}/{1}_{2}".format(
             self.config.model_path_to_save,
             self.config.model_name,
             self.config.dataset_name,
         )
 
-        self.config.metrics_of_this_checkpoint = {"acc": 0, "f1": 0}
-        self.config.max_test_metrics = {"max_apc_test_acc": 0, "max_apc_test_f1": 0}
+        self.config.metrics_of_this_checkpoint = {"acc": 0, "f1": 0, "precision": 0, "recall": 0}
+        self.config.max_test_metrics = {"max_apc_test_acc": 0, "max_apc_test_f1": 0, "max_apc_test_precision": 0, "max_apc_test_recall": 0}
 
         losses = []
 
@@ -157,15 +159,17 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 if global_step % self.config.log_step == 0:
                     if self.test_dataloader and epoch >= self.config.evaluate_begin:
                         if len(self.valid_dataloaders) > 1:
-                            test_acc, f1 = self._evaluate_acc_f1(
+                            test_acc, f1, precision, recall = self._evaluate_acc_f1(
                                 self.valid_dataloaders[0]
                             )
                         else:
-                            test_acc, f1 = self._evaluate_acc_f1(self.test_dataloader)
+                            test_acc, f1, precision, recall = self._evaluate_acc_f1(self.test_dataloader)
                         self.config.metrics_of_this_checkpoint["acc"] = test_acc
                         self.config.metrics_of_this_checkpoint["f1"] = f1
+                        self.config.metrics_of_this_checkpoint["precision"] = precision
+                        self.config.metrics_of_this_checkpoint["recall"] = recall
 
-                        if test_acc > max_fold_acc or f1 > max_fold_f1:
+                        if test_acc > max_fold_acc or f1 > max_fold_f1 or precision > max_fold_precision or recall > max_fold_recall:
                             if test_acc > max_fold_acc:
                                 patience = self.config.patience - 1
                                 max_fold_acc = test_acc
@@ -173,6 +177,14 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                             if f1 > max_fold_f1:
                                 max_fold_f1 = f1
                                 patience = self.config.patience - 1
+
+                            if precision > max_fold_precision:
+                                    max_fold_precision = precision
+                                    patience = self.config.patience - 1                                
+                            
+                            if recall > max_fold_recall:
+                                    max_fold_recall = recall
+                                    patience = self.config.patience - 1                            
 
                             if self.config.model_path_to_save:
                                 if not os.path.exists(self.config.model_path_to_save):
@@ -184,12 +196,14 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                     except:
                                         # logger.info('Can not remove sub-optimal trained model:', save_path)
                                         pass
-                                save_path = "{0}/{1}_{2}_acc_{3}_f1_{4}/".format(
+                                save_path = "{0}/{1}_{2}_acc_{3}_f1_{4}_precision_{5}_recall_{6}/".format(
                                     self.config.model_path_to_save,
                                     self.config.model_name,
                                     self.config.dataset_name,
                                     round(test_acc * 100, 2),
                                     round(f1 * 100, 2),
+                                    round(precision * 100, 2),
+                                    round(recall * 100, 2),
                                 )
 
                                 if (
@@ -199,18 +213,28 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                     self.config.max_test_metrics[
                                         "max_apc_test_acc"
                                     ] = test_acc
+                                    
                                 if f1 > self.config.max_test_metrics["max_apc_test_f1"]:
                                     self.config.max_test_metrics["max_apc_test_f1"] = f1
-
+                                
+                                if precision > self.config.max_test_metrics["max_apc_test_precision"]:
+                                    self.config.max_test_metrics["max_apc_test_precision"] = precision
+                                
+                                if recall > self.config.max_test_metrics["max_apc_test_recall"]:
+                                    self.config.max_test_metrics["max_apc_test_recall"] = recall    
+                                
+                                
                                 save_model(
                                     self.config, self.model, self.tokenizer, save_path
                                 )
 
-                        postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) | Dev F1:{:>.2f}(max:{:>.2f})".format(
+                        postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) | Dev F1:{:>.2f}(max:{:>.2f}) | Precision:{:>.2f} | Recall:{:>.2f}".format(
                             test_acc * 100,
                             max_fold_acc * 100,
                             f1 * 100,
                             max_fold_f1 * 100,
+                            precision * 100,
+                            recall * 100,
                         )
                         iterator.set_postfix_str(postfix)
                     elif self.config.save_mode and epoch >= self.config.evaluate_begin:
@@ -219,6 +243,8 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                             self.model,
                             self.tokenizer,
                             save_path + "_{}/".format(loss.item()),
+                            max_fold_precision,
+                            max_fold_recall
                         )
                 else:
                     if self.config.get("loss_display", "smooth") == "smooth":
@@ -253,6 +279,25 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 "Max-Test-F1 w/o Valid Set",
                 max_fold_f1 * 100,
             )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-Test-Precision w/o Valid Set",
+                max_fold_precision * 100,
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-Test-Recall w/o Valid Set",
+                max_fold_recall * 100,
+            )
+            
 
         if len(self.valid_dataloaders) > 1:
             fprint(
@@ -278,6 +323,24 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 + self.config.pretrained_bert,
                 "Max-Test-F1",
                 max_fold_f1 * 100,
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-Test-Precision",
+                max_fold_precision * 100,
+            )
+            self.config.MV.log_metric(
+                self.config.model_name
+                + "-"
+                + self.config.dataset_name
+                + "-"
+                + self.config.pretrained_bert,
+                "Max-Test-Recall",
+                max_fold_recall * 100,
             )
             # shutil.rmtree(save_path)
 
@@ -314,14 +377,16 @@ class APCTrainingInstructor(BaseTrainingInstructor):
     def _k_fold_train_and_evaluate(self, criterion):
         fold_test_acc = []
         fold_test_f1 = []
+        fold_test_precision = []
+        fold_test_recall = []
 
         save_path_k_fold = ""
         max_fold_acc_k_fold = 0
 
         losses = []
 
-        self.config.metrics_of_this_checkpoint = {"acc": 0, "f1": 0}
-        self.config.max_test_metrics = {"max_apc_test_acc": 0, "max_apc_test_f1": 0}
+        self.config.metrics_of_this_checkpoint = {"acc": 0, "f1": 0, "precision": 0, "recall": 0}
+        self.config.max_test_metrics = {"max_apc_test_acc": 0, "max_apc_test_f1": 0, "max_apc_test_precision": 0, "max_apc_test_recall": 0}
 
         for f, (train_dataloader, valid_dataloader) in enumerate(
             zip(self.train_dataloaders, self.valid_dataloaders)
@@ -335,7 +400,7 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 )
 
             self.logger.info(
-                "***** Running training for {} *****".format(self.config.task_name)
+                "***** Running training latian for {} *****".format(self.config.task_name)
             )
             self.logger.info("Training set examples = %d", len(self.train_set))
             if self.valid_set:
@@ -356,6 +421,8 @@ class APCTrainingInstructor(BaseTrainingInstructor):
             global_step = 0
             max_fold_acc = 0
             max_fold_f1 = 0
+            max_fold_precision = 0
+            max_fold_recall = 0
             save_path = "{0}/{1}_{2}".format(
                 self.config.model_path_to_save,
                 self.config.model_name,
@@ -412,18 +479,28 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                     # evaluate if test set is available
                     if global_step % self.config.log_step == 0:
                         if self.test_dataloader and epoch >= self.config.evaluate_begin:
-                            test_acc, f1 = self._evaluate_acc_f1(valid_dataloader)
+                            test_acc, f1, precision, recall = self._evaluate_acc_f1(valid_dataloader)
 
                             self.config.metrics_of_this_checkpoint["acc"] = test_acc
                             self.config.metrics_of_this_checkpoint["f1"] = f1
-
-                            if test_acc > max_fold_acc or f1 > max_fold_f1:
+                            self.config.metrics_of_this_checkpoint["precision"] = precision
+                            self.config.metrics_of_this_checkpoint["recall"] = recall
+                            
+                            if test_acc > max_fold_acc or f1 > max_fold_f1 or precision > max_fold_precision or recall > max_fold_recall:
                                 if test_acc > max_fold_acc:
                                     patience = self.config.patience - 1
                                     max_fold_acc = test_acc
 
                                 if f1 > max_fold_f1:
                                     max_fold_f1 = f1
+                                    patience = self.config.patience - 1
+                                
+                                if precision > max_fold_precision:
+                                    max_fold_precision = f1
+                                    patience = self.config.patience - 1
+                                    
+                                if recall > max_fold_recall:
+                                    max_fold_recall = recall
                                     patience = self.config.patience - 1
 
                                 if self.config.model_path_to_save:
@@ -438,12 +515,14 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                         except:
                                             # logger.info('Can not remove sub-optimal trained model:', save_path)
                                             pass
-                                    save_path = "{0}/{1}_{2}_acc_{3}_f1_{4}/".format(
+                                    save_path = "{0}/{1}_{2}_acc_{3}_f1_{4}_precision_{5}_recall_{6}/".format(
                                         self.config.model_path_to_save,
                                         self.config.model_name,
                                         self.config.dataset_name,
                                         round(test_acc * 100, 2),
                                         round(f1 * 100, 2),
+                                        round(precision * 100, 2),
+                                        round(recall * 100, 2),                                      
                                     )
 
                                     if (
@@ -464,6 +543,24 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                         self.config.max_test_metrics[
                                             "max_apc_test_f1"
                                         ] = f1
+                                    if (
+                                        precision
+                                        > self.config.max_test_metrics[
+                                            "max_apc_test_precision"
+                                        ]
+                                    ):
+                                        self.config.max_test_metrics[
+                                            "max_apc_test_precision"
+                                        ] = precision
+                                    if (
+                                        recall
+                                        > self.config.max_test_metrics[
+                                            "max_apc_test_recall"
+                                        ]
+                                    ):
+                                        self.config.max_test_metrics[
+                                            "max_apc_test_recall"
+                                        ] = recall
 
                                     save_model(
                                         self.config,
@@ -472,11 +569,15 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                                         save_path,
                                     )
 
-                            postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) Dev F1:{:>.2f}(max:{:>.2f})".format(
+                            postfix = "Dev Acc:{:>.2f}(max:{:>.2f}) Dev F1:{:>.2f}(max:{:>.2f}) Dev Prec:{:>.2f}(max:{:>.2f}) Dev Rec:{:>.2f}(max:{:>.2f})".format(
                                 test_acc * 100,
                                 max_fold_acc * 100,
                                 f1 * 100,
                                 max_fold_f1 * 100,
+                                precision * 100,
+                                max_fold_precision * 100,
+                                recall * 100,
+                                max_fold_recall * 100
                             )
                             iterator.set_postfix_str(postfix)
                         if (
@@ -503,11 +604,13 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                     iterator.refresh()
                 if patience == 0:
                     break
-            max_fold_acc, max_fold_f1 = self._evaluate_acc_f1(self.test_dataloader)
+            max_fold_acc, max_fold_f1, max_fold_precision, max_fold_recall = self._evaluate_acc_f1(self.test_dataloader)
             if max_fold_acc > max_fold_acc_k_fold:
                 save_path_k_fold = save_path
             fold_test_acc.append(max_fold_acc)
             fold_test_f1.append(max_fold_f1)
+            fold_test_precision.append(max_fold_precision)
+            fold_test_recall.append(max_fold_recall)
 
             self.config.MV.log_metric(
                 self.config.model_name,
@@ -519,6 +622,16 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 "Fold{}-Max-Test-F1".format(f),
                 max_fold_f1 * 100,
             )
+            self.config.MV.log_metric(
+                self.config.model_name,
+                "Fold{}-Max-Test-Precision".format(f),
+                max_fold_precision * 100,
+            )
+            self.config.MV.log_metric(
+                self.config.model_name,
+                "Fold{}-Max-Test-Recall".format(f),
+                max_fold_recall * 100,
+            )
 
             # self.logger.info(self.config.MV.summary(no_print=True))
             self.logger.info(self.config.MV.raw_summary(no_print=True))
@@ -527,6 +640,8 @@ class APCTrainingInstructor(BaseTrainingInstructor):
 
         max_test_acc = numpy.max(fold_test_acc)
         max_test_f1 = numpy.max(fold_test_f1)
+        max_test_precision = numpy.max(fold_test_precision)
+        max_test_recall = numpy.max(fold_test_recall)
 
         self.config.MV.log_metric(
             self.config.model_name
@@ -545,6 +660,24 @@ class APCTrainingInstructor(BaseTrainingInstructor):
             + self.config.pretrained_bert,
             "Max-Test-F1",
             max_test_f1 * 100,
+        )
+        self.config.MV.log_metric(
+            self.config.model_name
+            + "-"
+            + self.config.dataset_name
+            + "-"
+            + self.config.pretrained_bert,
+            "Max-Test-Precision",
+            max_test_precision * 100,
+        )
+        self.config.MV.log_metric(
+            self.config.model_name
+            + "-"
+            + self.config.dataset_name
+            + "-"
+            + self.config.pretrained_bert,
+            "Max-Test-Recall",
+            max_test_recall * 100,
         )
 
         self.logger.info(self.config.MV.summary(no_print=True))
@@ -580,6 +713,67 @@ class APCTrainingInstructor(BaseTrainingInstructor):
             time.sleep(3)
             return self.model, self.config, self.tokenizer
 
+    # def _evaluate_acc_f1(self, test_dataloader):
+    #     # switch model to evaluation mode
+    #     self.model.eval()
+    #     n_test_correct, n_test_total = 0, 0
+    #     t_targets_all, t_outputs_all = None, None
+    #     with torch.no_grad():
+    #         for t_batch, t_sample_batched in enumerate(test_dataloader):
+    #             t_inputs = {
+    #                 col: t_sample_batched[col].to(self.config.device)
+    #                 for col in self.config.inputs_cols
+    #             }
+
+    #             t_targets = t_sample_batched["polarity"].to(self.config.device)
+
+    #             t_outputs = self.model(t_inputs)
+
+    #             if isinstance(t_outputs, dict):
+    #                 sen_outputs = t_outputs["logits"]
+    #             else:
+    #                 sen_outputs = t_outputs
+
+    #             n_test_correct += (
+    #                 (torch.argmax(sen_outputs, -1) == t_targets).sum().item()
+    #             )
+    #             n_test_total += len(sen_outputs)
+
+    #             if t_targets_all is None:
+    #                 t_targets_all = t_targets
+    #                 t_outputs_all = sen_outputs
+    #             else:
+    #                 t_targets_all = torch.cat((t_targets_all, t_targets), dim=0)
+    #                 t_outputs_all = torch.cat((t_outputs_all, sen_outputs), dim=0)
+
+    #     test_acc = n_test_correct / n_test_total
+    #     f1 = metrics.f1_score(
+    #         t_targets_all.cpu(),
+    #         torch.argmax(t_outputs_all.cpu(), -1),
+    #         labels=list(range(self.config.output_dim)),
+    #         average=self.config.get("f1_average", "macro"),
+    #     )
+
+    #     if self.config.args.get("show_metric", False):
+    #         fprint(
+    #             "\n---------------------------- APC Classification Report ----------------------------\n"
+    #         )
+    #         fprint(
+    #             metrics.classification_report(
+    #                 t_targets_all.cpu(),
+    #                 torch.argmax(t_outputs_all.cpu(), -1),
+    #                 target_names=[
+    #                     self.config.index_to_label[x]
+    #                     for x in sorted(self.config.index_to_label.keys())
+    #                 ],
+    #             )
+    #         )
+    #         fprint(
+    #             "\n---------------------------- APC Classification Report ----------------------------\n"
+    #         )
+
+    #     return test_acc, f1
+    
     def _evaluate_acc_f1(self, test_dataloader):
         # switch model to evaluation mode
         self.model.eval()
@@ -620,6 +814,22 @@ class APCTrainingInstructor(BaseTrainingInstructor):
             labels=list(range(self.config.output_dim)),
             average=self.config.get("f1_average", "macro"),
         )
+        
+        precision = metrics.precision_score(
+            t_targets_all.cpu(),
+            torch.argmax(t_outputs_all.cpu(), -1),
+            labels=list(range(self.config.output_dim)),
+            average=self.config.get("f1_average", "macro"),
+            zero_division=0
+        )
+        
+        recall = metrics.recall_score(
+            t_targets_all.cpu(),
+            torch.argmax(t_outputs_all.cpu(), -1),
+            labels=list(range(self.config.output_dim)),
+            average=self.config.get("f1_average", "macro"),
+            zero_division=0
+        )
 
         if self.config.args.get("show_metric", False):
             fprint(
@@ -639,7 +849,8 @@ class APCTrainingInstructor(BaseTrainingInstructor):
                 "\n---------------------------- APC Classification Report ----------------------------\n"
             )
 
-        return test_acc, f1
+        return test_acc, f1, precision, recall
+
 
     def _init_misc(self):
         # eta1 and eta2 works only on LSA models, read the LSA paper for more details
